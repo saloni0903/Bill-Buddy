@@ -8,13 +8,13 @@ const calc = async () => {
   for (const sub of subs) {
     if (sub.status === 'Active') {
       burnRate += sub.cycle === 'Yearly' ? sub.cost / 12 : sub.cost;
-    }
-    const diff = Math.ceil((new Date(sub.date) - Date.now()) / (1000 * 60 * 60 * 24));
-    if (diff < 0) {
-      sub.isOverdue = true;
-    } else if (diff >= 0 && diff <= 7) {
-      sub.isUrgent = true;
-      alertCnt++;
+      const diff = Math.ceil((new Date(sub.date) - Date.now()) / (1000 * 60 * 60 * 24));
+      if (diff < 0) {
+        sub.isOverdue = true;
+      } else if (diff >= 0 && diff <= 7) {
+        sub.isUrgent = true;
+        alertCnt++;
+      }
     }
   }
   
