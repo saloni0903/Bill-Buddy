@@ -1,122 +1,90 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import { getDash, addSub, toggleSub } from './services/api';
+import Metrics from './components/Metrics';
+import Form from './components/Form';
+import Grid from './components/Grid';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [met, setMet] = useState({ burnRate: 0, alertCnt: 0 });
+  const [subs, setSubs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const data = await getDash();
+      setMet(data.metrics);
+      setSubs(data.subs);
+      setErr('');
+    } catch (ex) {
+      setErr('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleAdd = async (d) => {
+    const data = await addSub(d);
+    setMet(data.metrics);
+    setSubs(data.subs);
+  };
+
+  const handleToggle = async (id) => {
+    try {
+      const data = await toggleSub(id);
+      setMet(data.metrics);
+      setSubs(data.subs);
+    } catch (ex) {
+      setErr('Failed to toggle status');
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-screen bg-slate-950 text-slate-100 py-10 px-4 md:px-8">
+      <div className="max-w-6xl mx-auto">
+        <header className="mb-10 text-center md:text-left flex flex-col md:flex-row md:items-center md:justify-between border-b border-zinc-900 pb-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Bill Buddy
+            </h1>
+            <p className="text-zinc-500 mt-1 text-sm md:text-base">
+              Subscription Tracker & Renewal Dashboard
+            </p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <button
+              onClick={load}
+              className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+            >
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-zinc-500 mt-4 text-sm font-medium">Syncing subscriptions...</p>
+          </div>
+        ) : (
+          <>
+            {err && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-4 rounded-xl mb-6 flex items-center">
+                <span className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-ping"></span>
+                {err}
+              </div>
+            )}
+            <Metrics burnRate={met.burnRate} alertCnt={met.alertCnt} />
+            <Form onAdd={handleAdd} />
+            <Grid subs={subs} onToggle={handleToggle} />
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
-
-export default App
